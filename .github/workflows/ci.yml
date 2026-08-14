@@ -1,0 +1,39 @@
+name: CI
+
+# Runs on every push and pull request so a broken build or a failing test
+# is caught before it merges, not after it's live. This is deliberately
+# minimal — type-check, lint, unit tests — rather than a full deploy
+# pipeline, since deployment itself is handled by Vercel's own GitHub
+# integration once this repo is connected there.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      # Prisma needs a schema-valid client to exist before `tsc` can check
+      # any file that imports it. We don't need a real database connection
+      # for this — `generate` only reads schema.prisma, it doesn't connect.
+      - run: npx prisma generate
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage

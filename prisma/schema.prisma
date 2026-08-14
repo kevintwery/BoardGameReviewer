@@ -1,0 +1,328 @@
+// Prisma schema for the board game review site.
+//
+// This file is intentionally kept as the single source of truth for our
+// data shape. Prisma generates fully-typed TypeScript types from this file
+// automatically, so the frontend and backend never fall out of sync.
+//
+// After editing this file, run `npm run db:generate` to regenerate types,
+// and `npm run db:migrate` to apply the change to your database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+// We store a lightweight local copy of each user. Clerk (or Auth.js) owns
+// the actual authentication (passwords, OAuth, sessions) — this table just
+// mirrors the pieces of a user we need to relate to our own data, keyed by
+// the id Clerk assigns them.
+model User {
+  id          String   @id // Clerk's user id — we don't generate our own
+  displayName String
+  avatarUrl   String?
+  // Defaults every new signup to a plain USER. Promote someone to
+  // MODERATOR/ADMIN manually (Prisma Studio, or a one-off script) — there's
+  // deliberately no self-serve way to grant yourself moderation access.
+  role        UserRole @default(USER)
+  // Set when a user deletes their account. We anonymize rather than
+  // hard-delete this row — see lib/account.ts — so their forum posts
+  // and comments keep working (displayed as "[deleted user]") instead
+  // of cascading away and breaking threads other people replied to.
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  ratings       Rating[]
+  lists         GameList[]
+  forumPosts    ForumPost[]
+  forumComments ForumComment[]
+  forumVotes    ForumVote[]
+  reportsFiled  ForumReport[] @relation("Reporter")
+
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Games (synced from BoardGameGeek)
+// ---------------------------------------------------------------------------
+
+model Game {
+  id          String @id @default(cuid())
+  bggId       Int    @unique // BoardGameGeek's own id, used to re-sync this row
+  slug        String @unique // URL-friendly identifier, e.g. "wingspan"
+
+  name        String
+  description String
+  imageUrl    String
+
+  // BGG data used for filtering (game night planner, list sorting, etc.)
+  minPlayers  Int
+  maxPlayers  Int
+  playingTime Int   // minutes
+  bggWeight   Float // BGG's own 1-5 complexity rating, for reference
+
+  categories String[] // e.g. ["Strategy", "Party"]
+  mechanics  String[] // e.g. ["Deck Building", "Worker Placement"]
+
+  // Denormalized rating stats. Recalculated by lib/ratings.ts whenever a
+  // Rating is created/updated/deleted, so sorting the game list by rating
+  // is a fast indexed column read instead of an aggregate query every time.
+  avgRating   Float @default(0)
+  ratingCount Int   @default(0)
+
+  // Self-relation for expansions -> base game, if we add that later.
+  // Left out of v1 on purpose — see project README.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ratings    Rating[]
+  videos     Video[]
+  forumPosts ForumPost[]
+  listItems  GameListItem[]
+
+  @@index([avgRating])
+  @@index([name])
+  // Speeds up the game night planner's player-count range filter
+  // (WHERE minPlayers <= X AND maxPlayers >= X) — without this, that
+  // query does a full table scan once the catalog grows past a few
+  // hundred games.
+  @@index([minPlayers, maxPlayers])
+}
+
+// Curated instructional videos shown in the "how to play" row on a game
+// page. These are picked by admins/moderators, not scraped automatically,
+// so we control quality.
+model Video {
+  id            String @id @default(cuid())
+  gameId        String
+  youtubeVideoId String
+  title         String
+  sortOrder     Int    @default(0)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+// ---------------------------------------------------------------------------
+// Ratings
+// ---------------------------------------------------------------------------
+
+model Rating {
+  id     String @id @default(cuid())
+  userId String
+  gameId String
+
+  overallScore Int // 1-10, required
+
+  // Optional sub-ratings. Nullable because we don't want to force every
+  // user to fill these in just to leave a quick overall score.
+  funScore        Int?
+  replayScore     Int?
+  componentScore  Int?
+  complexityScore Int? // user's own 1-5 "how hard to learn/play", distinct from Game.bggWeight
+
+  reviewText String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId]) // one rating per user per game — re-rating updates it
+  @@index([gameId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Personal lists (Favorites, Want to Buy, Want to Try, Games I Own, + custom)
+// ---------------------------------------------------------------------------
+
+model GameList {
+  id     String @id @default(cuid())
+  userId String
+  name   String
+
+  // True for the lists we auto-create on signup (see lib/lists.ts).
+  // Kept as a flag (not a special-cased name check) so renaming a default
+  // list doesn't break anything that depends on it being "the" Favorites list.
+  isDefault Boolean @default(false)
+
+  // Renders as a box-art shelf/grid instead of the standard row layout.
+  isOwnedList Boolean @default(false)
+
+  isPublic Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items GameListItem[]
+
+  @@index([userId])
+}
+
+model GameListItem {
+  id      String @id @default(cuid())
+  listId  String
+  gameId  String
+  addedAt DateTime @default(now())
+
+  list GameList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  game Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, gameId]) // prevent adding the same game twice
+  @@index([gameId])
+}
+
+// ---------------------------------------------------------------------------
+// Forum
+// ---------------------------------------------------------------------------
+
+enum ForumCategory {
+  RULE_CLARIFICATION
+  HOUSE_RULES
+  STRATEGY
+}
+
+model ForumPost {
+  id     String @id @default(cuid())
+  gameId String
+  userId String
+
+  title    String
+  body     String
+  category ForumCategory
+
+  // Set true by a moderator resolving a report (see lib/moderation.ts).
+  // We hide rather than hard-delete so there's always a record of what
+  // was posted and why it was actioned — deleting outright would make
+  // the report queue's history meaningless.
+  isHidden Boolean @default(false)
+
+  // Denormalized sum of ForumVote.voteValue for this post, kept in sync
+  // by lib/forumVotes.ts whenever a vote is cast, changed, or removed.
+  // Without this, listing a game's forum would need to fetch every vote
+  // row for every post just to add them up client-side — fine for a
+  // handful of votes, expensive once a popular post has hundreds.
+  voteScore Int @default(0)
+
+  // Only meaningful for RULE_CLARIFICATION posts — the UI only shows the
+  // "mark as accepted" control for that category. We don't enforce that
+  // restriction at the database level since it's a display rule, not a
+  // data integrity rule, and may loosen over time.
+  acceptedCommentId String?      @unique
+  acceptedComment   ForumComment? @relation("AcceptedAnswer", fields: [acceptedCommentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  game     Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  // Restrict, not Cascade: account deletion anonymizes the User row in
+  // place (lib/account.ts) rather than removing it, specifically so this
+  // relation never needs to fire. Restrict is a safety net — it makes a
+  // future `db.user.delete()` fail loudly instead of silently wiping a
+  // forum thread other people are relying on.
+  user     User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  comments ForumComment[] @relation("PostComments")
+  votes    ForumVote[]
+  reports  ForumReport[]  @relation("PostReports")
+
+  @@index([gameId, category])
+  @@index([userId])
+  @@index([isHidden])
+  @@index([voteScore])
+}
+
+model ForumComment {
+  id     String @id @default(cuid())
+  postId String
+  userId String
+  body   String
+
+  isHidden Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  post ForumPost @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  // See the comment on ForumPost.user — same reasoning.
+  user User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // Back-relation for ForumPost.acceptedComment above. A comment can be the
+  // accepted answer for at most one post (enforced by @unique there).
+  acceptedFor ForumPost?    @relation("AcceptedAnswer")
+  reports     ForumReport[] @relation("CommentReports")
+
+  @@index([postId])
+}
+
+// One vote row per user per post. voteValue is +1 or -1 so we can sum
+// votes with a simple aggregate query for the "hot score" ranking
+// (see lib/ranking.ts).
+model ForumVote {
+  id        String @id @default(cuid())
+  postId    String
+  userId    String
+  voteValue Int // +1 or -1
+
+  post ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Content moderation
+// ---------------------------------------------------------------------------
+
+enum ReportedContentType {
+  POST
+  COMMENT
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// A user flagging a post or comment for moderator review. Exactly one of
+// postId/commentId is set, matching contentType — enforced in application
+// code (lib/moderation.ts) rather than the database, since Prisma doesn't
+// support a clean "exactly one of these two columns" constraint.
+model ForumReport {
+  id          String              @id @default(cuid())
+  contentType ReportedContentType
+  postId      String?
+  commentId   String?
+  reporterId  String
+  reason      String
+  status      ReportStatus        @default(PENDING)
+
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedBy String? // the moderator's user id, for an audit trail
+
+  post     ForumPost?    @relation("PostReports", fields: [postId], references: [id], onDelete: Cascade)
+  comment  ForumComment? @relation("CommentReports", fields: [commentId], references: [id], onDelete: Cascade)
+  reporter User          @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  // The moderation queue's main query is "give me all PENDING reports,
+  // oldest first" — this index makes that a fast index scan instead of a
+  // full table scan once reports pile up.
+  @@index([status, createdAt])
+}

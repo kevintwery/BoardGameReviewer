@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Applying dark-mode-aware background/text colors at the root means every
+   page inherits correct colors by default, instead of every component
+   needing its own `dark:bg-...` on a wrapping div. */
+body {
+  @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+}

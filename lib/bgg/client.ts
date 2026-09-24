@@ -12,7 +12,7 @@ import { parseStringPromise } from "xml2js";
  *    for it below.
  */
 
-const BGG_BASE_URL = "https://api.geekdo.com/xmlapi2";
+const BGG_BASE_URL = "https://boardgamegeek.com/xmlapi2/";
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 5;
 
@@ -38,21 +38,22 @@ export async function fetchGameFromBgg(bggId: number): Promise<BggGameData> {
   const parsed = await parseStringPromise(xml);
 
   const item = parsed.items.item[0];
-
-  return {
-    bggId,
-    name: extractPrimaryName(item),
-    description: item.description[0],
-    imageUrl: item.image[0],
-    minPlayers: Number(item.minplayers[0].$.value),
-    maxPlayers: Number(item.maxplayers[0].$.value),
-    playingTime: Number(item.playingtime[0].$.value),
-    bggWeight: Number(
-      item.statistics[0].ratings[0].averageweight[0].$.value
-    ),
-    categories: extractLinksByType(item, "boardgamecategory"),
-    mechanics: extractLinksByType(item, "boardgamemechanic"),
-  };
+  const boardGameItem = {
+      bggId,
+      name: extractPrimaryName(item),
+      description: item.description[0],
+      imageUrl: item.image[0],
+      minPlayers: Number(item.minplayers[0].$.value),
+      maxPlayers: Number(item.maxplayers[0].$.value),
+      playingTime: Number(item.playingtime[0].$.value),
+      bggWeight: Number(
+        item.statistics[0].ratings[0].averageweight[0].$.value
+      ),
+      categories: extractLinksByType(item, "boardgamecategory"),
+      mechanics: extractLinksByType(item, "boardgamemechanic"),
+    };
+    console.log(boardGameItem.name, boardGameItem.bggId, boardGameItem.minPlayers, boardGameItem.maxPlayers, boardGameItem.playingTime, boardGameItem.bggWeight, boardGameItem.categories, boardGameItem.mechanics);
+  return boardGameItem;
 }
 
 export interface BggSearchResult {
@@ -106,7 +107,8 @@ async function fetchWithPolling(url: string): Promise<string> {
       headers: {
         // BGG asks API consumers to identify themselves — see their API
         // terms of use. Set BGG_CONTACT_EMAIL in .env.local.
-        "User-Agent": `board-game-review (${process.env.BGG_CONTACT_EMAIL ?? "no-contact-set"})`,
+        "User-Agent": `board-game-review (${process.env.BGG_CONTACT_EMAIL ?? "ktwery3@gmail.com"})`,
+        "Authorization": `Bearer ${process.env.BGG_API_KEY ?? "78c7554e-5d6a-4a17-9639-bbf5315fee82"}`, // optional
       },
     });
 

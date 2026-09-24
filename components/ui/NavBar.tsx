@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function NavBar() {
@@ -33,11 +33,18 @@ export function NavBar() {
             </UserButton>
           </SignedIn>
           <SignedOut>
-            <SignInButton>
-              <button className="rounded-md bg-brand-500 px-3 py-1.5 font-medium text-white hover:bg-brand-600">
-                Sign in
-              </button>
-            </SignInButton>
+            <div className="flex items-center gap-2">
+              <SignInButton>
+                <button className="rounded-md px-3 py-1.5 font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton>
+                <button className="rounded-md bg-brand-500 px-3 py-1.5 font-medium text-white hover:bg-brand-600">
+                  Sign up
+                </button>
+              </SignUpButton>
+            </div>
           </SignedOut>
         </div>
       </nav>

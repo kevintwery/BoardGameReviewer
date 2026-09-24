@@ -26,17 +26,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        {/* suppressHydrationWarning is needed because the "dark" class is
-            applied client-side (see lib/theme.ts) before React hydrates,
-            which would otherwise cause a harmless server/client mismatch warning. */}
-        <body suppressHydrationWarning>
+    <html lang="en">
+      {/* suppressHydrationWarning is needed because the "dark" class is
+          applied client-side (see lib/theme.ts) before React hydrates,
+          which would otherwise cause a harmless server/client mismatch warning. */}
+      <body suppressHydrationWarning>
+        <ClerkProvider>
           <NavBar />
           {children}
           <SiteFooter />
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

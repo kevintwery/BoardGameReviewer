@@ -41,7 +41,7 @@ async function main() {
       name: "Gloomhaven",
       description:
         "A cooperative campaign game of tactical combat in a persistent, ever-evolving fantasy world.",
-      imageUrl: "https://cf.geekdo-images.com/sZYp_3BTDGjh2unaZfZmuA__original/img/gloomhaven.jpg",
+      imageUrl: "https://live.staticflickr.com/65535/47096076184_0cfffd4ec9_b.jpg",
       minPlayers: 1,
       maxPlayers: 4,
       playingTime: 120,

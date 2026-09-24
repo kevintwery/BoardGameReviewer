@@ -35,5 +35,6 @@ export const config = {
   matcher: [
     "/((?!_next|.*\\..*).*)", // run on every route except static files
     "/(api|trpc)(.*)",
+    "/__clerk/:path*",
   ],
 };

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       ...(players > 0 && { minPlayers: { lte: players }, maxPlayers: { gte: players } }),
       ...(maxMinutes > 0 && { playingTime: { lte: maxMinutes } }),
     },
-    orderBy: { avgRating: "desc" },
+    orderBy: { bggRating: "desc" },
     take: 20,
   });
 

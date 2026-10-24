@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     },
     select: { id: true, slug: true, name: true, imageUrl: true },
     take: MAX_RESULTS,
-    orderBy: { avgRating: "desc" },
+    orderBy: { bggRating: "desc" },
   });
 
   return NextResponse.json({ games });

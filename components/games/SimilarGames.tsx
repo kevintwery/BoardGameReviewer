@@ -7,7 +7,7 @@ interface SimilarGamesProps {
     slug: string;
     name: string;
     imageUrl: string;
-    avgRating: number;
+    bggRating: number;
   }>;
 }
 
@@ -37,7 +37,7 @@ export function SimilarGames({ games }: SimilarGamesProps) {
             </div>
             <p className="mt-1 truncate text-sm font-medium">{game.name}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              ★ {game.avgRating.toFixed(1)}
+              ★ {game.bggRating.toFixed(1)}
             </p>
           </Link>
         ))}

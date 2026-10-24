@@ -24,7 +24,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
   const order = searchParams.order ?? "desc";
   const page = Number(searchParams.page ?? "1");
 
-  const orderBy = sort === "rating" ? { avgRating: order } : { name: order };
+  const orderBy = sort === "rating" ? { bggRating: order } : { name: order };
 
   const [games, totalCount] = await Promise.all([
     db.game.findMany({
@@ -59,7 +59,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
             </div>
             <p className="mt-1 truncate text-sm font-medium">{game.name}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              ★ {game.avgRating.toFixed(1)} ({game.ratingCount})
+              ★ {game.bggRating.toFixed(1)} ({game.bggRatingCount.toLocaleString()} BGG ratings)
             </p>
           </Link>
         ))}

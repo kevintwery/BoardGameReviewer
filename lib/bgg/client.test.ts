@@ -21,6 +21,8 @@ const SAMPLE_BGG_XML = `<?xml version="1.0" encoding="utf-8"?>
     <link type="boardgamemechanic" id="3" value="Engine Building" />
     <statistics page="1">
       <ratings>
+        <usersrated value="12500" />
+        <average value="8.1" />
         <averageweight value="2.4" />
       </ratings>
     </statistics>
@@ -62,6 +64,8 @@ describe("fetchGameFromBgg", () => {
     expect(game.maxPlayers).toBe(5);
     expect(game.playingTime).toBe(70);
     expect(game.bggWeight).toBe(2.4);
+    expect(game.bggRating).toBe(8.1);
+    expect(game.bggRatingCount).toBe(12500);
   });
 
   it("separates categories and mechanics by their link type", async () => {

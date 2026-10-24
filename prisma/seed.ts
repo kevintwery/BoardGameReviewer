@@ -24,6 +24,8 @@ async function main() {
       mechanics: ["Engine Building", "Card Drafting"],
       avgRating: 8.1,
       ratingCount: 42,
+      bggRating: 8.1,
+      bggRatingCount: 12500,
       videos: {
         create: [
           { youtubeVideoId: "lH2XCq0oCoA", title: "Wingspan - How to Play", sortOrder: 0 },
@@ -50,6 +52,8 @@ async function main() {
       mechanics: ["Engine Building", "Cooperative Game"],
       avgRating: 8.6,
       ratingCount: 58,
+      bggRating: 8.7,
+      bggRatingCount: 24000,
     },
   });
 

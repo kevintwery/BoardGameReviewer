@@ -77,8 +77,8 @@ export default async function GamePage({ params }: GamePageProps) {
       <HeroBanner
         name={game.name}
         imageUrl={game.imageUrl}
-        avgRating={game.avgRating}
-        ratingCount={game.ratingCount}
+        avgRating={game.bggRating}
+        ratingCount={game.bggRatingCount}
         minPlayers={game.minPlayers}
         maxPlayers={game.maxPlayers}
         playingTime={game.playingTime}

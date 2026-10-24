@@ -49,6 +49,8 @@ describe("syncGameFromBgg", () => {
       bggWeight: 2.4,
       categories: ["Animals"],
       mechanics: ["Engine Building"],
+      bggRating: 8.1,
+      bggRatingCount: 12500,
     });
 
     await syncGameFromBgg(266192);

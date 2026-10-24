@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface ListRowViewProps {
-  games: Array<{ id: string; slug: string; name: string; imageUrl: string; avgRating: number }>;
+  games: Array<{ id: string; slug: string; name: string; imageUrl: string; bggRating: number }>;
 }
 
 /**
@@ -32,7 +32,7 @@ export function ListRowView({ games }: ListRowViewProps) {
             <div>
               <p className="font-medium">{game.name}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                ★ {game.avgRating.toFixed(1)}
+                ★ {game.bggRating.toFixed(1)}
               </p>
             </div>
           </Link>

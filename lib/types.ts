@@ -11,6 +11,8 @@ export interface GameSummary {
   imageUrl: string;
   avgRating: number;
   ratingCount: number;
+  bggRating: number;
+  bggRatingCount: number;
 }
 
 export interface GameListSummary {

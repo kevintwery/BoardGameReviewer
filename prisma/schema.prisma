@@ -83,6 +83,10 @@ model Game {
   avgRating   Float @default(0)
   ratingCount Int   @default(0)
 
+  // BGG's published rating, kept separate from this site's community ratings.
+  bggRating      Float @default(0)
+  bggRatingCount Int   @default(0)
+
   // Self-relation for expansions -> base game, if we add that later.
   // Left out of v1 on purpose — see project README.
 

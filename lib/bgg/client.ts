@@ -27,6 +27,8 @@ export interface BggGameData {
   bggWeight: number;
   categories: string[];
   mechanics: string[];
+  bggRating: number;
+  bggRatingCount: number;
 }
 
 /**
@@ -51,8 +53,9 @@ export async function fetchGameFromBgg(bggId: number): Promise<BggGameData> {
       ),
       categories: extractLinksByType(item, "boardgamecategory"),
       mechanics: extractLinksByType(item, "boardgamemechanic"),
+      bggRating: Number(item.statistics[0].ratings[0].average[0].$.value),
+      bggRatingCount: Number(item.statistics[0].ratings[0].usersrated[0].$.value),
     };
-    console.log(boardGameItem.name, boardGameItem.bggId, boardGameItem.minPlayers, boardGameItem.maxPlayers, boardGameItem.playingTime, boardGameItem.bggWeight, boardGameItem.categories, boardGameItem.mechanics);
   return boardGameItem;
 }
 

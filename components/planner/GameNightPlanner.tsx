@@ -10,7 +10,7 @@ interface PlannerResult {
   name: string;
   imageUrl: string;
   playingTime: number;
-  avgRating: number;
+  bggRating: number;
 }
 
 const TIME_OPTIONS = [

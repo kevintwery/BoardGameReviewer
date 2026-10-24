@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StarInput } from "@/components/games/StarInput";
 
 interface RatingFormProps {
@@ -18,6 +18,9 @@ interface ExistingRating {
   complexityScore: number | null;
   reviewText: string | null;
 }
+
+// How long the button shows "Rating saved" before going back to normal.
+const SAVED_CONFIRMATION_MS = 2000;
 
 const EMPTY_RATING: ExistingRating = {
   overallScore: 0,
@@ -40,6 +43,11 @@ export function RatingForm({ gameId, onSaved }: RatingFormProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Don't fire the reset after the form has unmounted.
+  useEffect(() => () => clearTimeout(savedTimeoutRef.current), []);
 
   useEffect(() => {
     async function loadExistingRating() {
@@ -63,6 +71,8 @@ export function RatingForm({ gameId, onSaved }: RatingFormProps) {
 
     setIsSaving(true);
     setSaveError(null);
+    setJustSaved(false);
+    clearTimeout(savedTimeoutRef.current);
 
     const response = await fetch("/api/ratings", {
       method: "POST",
@@ -76,6 +86,9 @@ export function RatingForm({ gameId, onSaved }: RatingFormProps) {
       setSaveError("Something went wrong saving your rating. Please try again.");
       return;
     }
+
+    setJustSaved(true);
+    savedTimeoutRef.current = setTimeout(() => setJustSaved(false), SAVED_CONFIRMATION_MS);
 
     onSaved?.();
   }
@@ -142,9 +155,11 @@ export function RatingForm({ gameId, onSaved }: RatingFormProps) {
       <button
         type="submit"
         disabled={isSaving}
-        className="rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+        className={`rounded-md px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
+          justSaved ? "bg-green-600 hover:bg-green-700" : "bg-brand-500 hover:bg-brand-600"
+        }`}
       >
-        {isSaving ? "Saving…" : "Save rating"}
+        {isSaving ? "Saving…" : justSaved ? "Rating saved" : "Save rating"}
       </button>
     </form>
   );

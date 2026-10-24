@@ -10,6 +10,7 @@ import { SimilarGames } from "@/components/games/SimilarGames";
 import { RatingForm } from "@/components/games/RatingForm";
 import { AddToListButton } from "@/components/lists/AddToListButton";
 import { RulesSummary } from "@/components/games/RulesSummary";
+import { GameTypeTags } from "@/components/games/GameTypeTags";
 
 interface GamePageProps {
   params: { slug: string };
@@ -84,17 +85,20 @@ export default async function GamePage({ params }: GamePageProps) {
         playingTime={game.playingTime}
       />
 
-      <div className="mt-4 flex justify-end">
-        <SignedIn>
-          <AddToListButton gameId={game.id} />
-        </SignedIn>
-        <SignedOut>
-          <SignInButton>
-            <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
-              Sign in to add to a list
-            </button>
-          </SignInButton>
-        </SignedOut>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <GameTypeTags categories={game.categories} />
+        <div className="ml-auto">
+          <SignedIn>
+            <AddToListButton gameId={game.id} />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton>
+              <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                Sign in to add to a list
+              </button>
+            </SignInButton>
+          </SignedOut>
+        </div>
       </div>
 
       <p className="mt-6 text-slate-700 dark:text-slate-300">{game.description}</p>

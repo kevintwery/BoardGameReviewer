@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
-import { db } from "@/lib/db";
-import { createDefaultListsForUser } from "@/lib/lists";
+import { ensureUser } from "@/lib/users";
 
 /**
  * Clerk sends a webhook here whenever a user is created, updated, or
@@ -44,15 +43,9 @@ export async function POST(request: NextRequest) {
       clerkUser.username ||
       "New Player";
 
-    await db.user.create({
-      data: {
-        id: clerkUser.id,
-        displayName,
-        avatarUrl: clerkUser.image_url ?? null,
-      },
-    });
-
-    await createDefaultListsForUser(clerkUser.id);
+    // ensureUser is idempotent, so this is safe even if the app already
+    // created the user on their first request (see lib/users.ts).
+    await ensureUser(clerkUser.id, { displayName, avatarUrl: clerkUser.image_url ?? null });
   }
 
   return NextResponse.json({ received: true });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { ensureUser } from "@/lib/users";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { forumVoteSchema } from "@/lib/validation";
 import { recalculateForumPostVoteScore } from "@/lib/forumVotes";
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  await ensureUser(userId);
 
   const limited = enforceRateLimit(userId, "forumVote");
   if (limited) {

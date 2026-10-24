@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { ensureUser } from "@/lib/users";
 
 // This route is already gated by middleware.ts (see the isProtectedRoute
 // matcher for "/lists(.*)"), so by the time this component runs we know
 // the visitor is signed in.
 export default async function ListsPage() {
   const { userId } = await auth();
+  // Creates the default lists if the signup webhook never ran (e.g. in
+  // local dev), so there's always at least one list here.
+  await ensureUser(userId!);
 
   const lists = await db.gameList.findMany({
     where: { userId: userId! },

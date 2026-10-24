@@ -17,6 +17,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "bgg:import-hot": "tsx scripts/import-hot-games.ts",
+    "bgg:sync-all": "tsx scripts/sync-all-games.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

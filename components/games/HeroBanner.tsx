@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { formatWeight } from "@/lib/weight";
 
 interface HeroBannerProps {
   name: string;
@@ -8,6 +9,7 @@ interface HeroBannerProps {
   minPlayers: number;
   maxPlayers: number;
   playingTime: number;
+  bggWeight: number;
 }
 
 /**
@@ -22,9 +24,11 @@ export function HeroBanner({
   minPlayers,
   maxPlayers,
   playingTime,
+  bggWeight,
 }: HeroBannerProps) {
   const playerRange =
     minPlayers === maxPlayers ? `${minPlayers} players` : `${minPlayers}–${maxPlayers} players`;
+  const weight = formatWeight(bggWeight);
 
   return (
     <div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-96">
@@ -48,6 +52,11 @@ export function HeroBanner({
           </span>
           <span>{playerRange}</span>
           <span>{playingTime} min</span>
+          {weight && (
+            <span title="BoardGameGeek community complexity rating, 1 (light) to 5 (heavy)">
+              Weight {weight.value} / 5 ({weight.label})
+            </span>
+          )}
         </div>
       </div>
     </div>

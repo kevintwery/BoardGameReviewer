@@ -123,8 +123,9 @@ database schema:
 - **BGG sync & catalog growth** — a scheduled job (`/api/bgg-sync`, wired
   to Vercel Cron) that refreshes every synced game's data; an admin
   search-and-import flow at `/admin/games/import` for adding new games
-  one at a time; and `npm run bgg:import-hot` for bulk-seeding the
-  catalog from BGG's current hot-games list
+  one at a time; `npm run bgg:import-hot` for bulk-seeding the
+  catalog from BGG's current hot-games list; and `npm run bgg:sync-all`
+  to re-import every existing game locally (same refresh as the cron)
 - **Account deletion** — `/account`, with a genuine anonymize-vs-delete
   split: ratings and personal lists are actually deleted, but forum
   posts/comments stay up (attributed to "[deleted user]") so other

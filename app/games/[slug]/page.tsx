@@ -83,6 +83,7 @@ export default async function GamePage({ params }: GamePageProps) {
         minPlayers={game.minPlayers}
         maxPlayers={game.maxPlayers}
         playingTime={game.playingTime}
+        bggWeight={game.bggWeight}
       />
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

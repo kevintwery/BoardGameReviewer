@@ -12,6 +12,7 @@ export interface GameSummary {
   avgRating: number;
   ratingCount: number;
   categories: string[];
+  bggWeight: number;
 }
 
 export interface GameListSummary {

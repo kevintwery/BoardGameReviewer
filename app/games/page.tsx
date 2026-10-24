@@ -5,6 +5,7 @@ import { SearchBox } from "@/components/games/SearchBox";
 import { SortControls } from "@/components/games/SortControls";
 import { GameTypeTags } from "@/components/games/GameTypeTags";
 import type { GameSummary } from "@/lib/types";
+import { formatWeight } from "@/lib/weight";
 
 const PAGE_SIZE = 20;
 
@@ -48,25 +49,31 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-        {games.map((game: GameSummary) => (
-          <Link key={game.id} href={`/games/${game.slug}`} className="group">
-            <div className="relative aspect-square overflow-hidden rounded-lg">
-              <Image
-                src={game.imageUrl}
-                alt={game.name}
-                fill
-                className="object-cover transition group-hover:scale-105"
-              />
-            </div>
-            <p className="mt-1 truncate text-sm font-medium">{game.name}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              ★ {game.avgRating.toFixed(1)} ({game.ratingCount})
-            </p>
-            <div className="mt-1">
-              <GameTypeTags categories={game.categories} limit={2} size="sm" />
-            </div>
-          </Link>
-        ))}
+        {games.map((game: GameSummary) => {
+          const weight = formatWeight(game.bggWeight);
+          return (
+            <Link key={game.id} href={`/games/${game.slug}`} className="group">
+              <div className="relative aspect-square overflow-hidden rounded-lg">
+                <Image
+                  src={game.imageUrl}
+                  alt={game.name}
+                  fill
+                  className="object-cover transition group-hover:scale-105"
+                />
+              </div>
+              <p className="mt-1 truncate text-sm font-medium">{game.name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                ★ {game.avgRating.toFixed(1)} ({game.ratingCount})
+                {weight && (
+                  <span title={`${weight.label} — BGG weight ${weight.value} / 5`}> · Weight {weight.value}</span>
+                )}
+              </p>
+              <div className="mt-1">
+                <GameTypeTags categories={game.categories} limit={2} size="sm" />
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {games.length === 0 && (

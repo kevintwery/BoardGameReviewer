@@ -99,14 +99,89 @@ export async function fetchHotGameIds(): Promise<number[]> {
   return items.map((item: any) => Number(item.$.id));
 }
 
+export interface BggForumThread {
+  id: number;
+  subject: string;
+  author: string;
+  replyCount: number;
+  lastPostDate: Date | null;
+  url: string;
+}
+
+export interface BggForum {
+  id: number;
+  title: string;
+  url: string;
+  threads: BggForumThread[];
+}
+
+// BGG forum data changes slowly and every game page wants it, so let
+// Next's fetch cache serve it for a while instead of asking BGG again
+// each time the page revalidates.
+const FORUM_CACHE_SECONDS = 6 * 60 * 60;
+
+/**
+ * Fetches a game's BGG forums with the given titles (BGG gives every game
+ * the same set: "Rules", "Strategy", "General", "Variants", …) and the
+ * most recently active threads in each. We only keep thread titles and
+ * link out to BGG for the posts themselves — post bodies belong to
+ * their authors and BGG.
+ */
+export async function fetchGameForums(
+  bggId: number,
+  forumTitles: string[],
+  threadsPerForum = 5
+): Promise<BggForum[]> {
+  const listXml = await fetchWithPolling(`${BGG_BASE_URL}/forumlist?id=${bggId}&type=thing`, {
+    next: { revalidate: FORUM_CACHE_SECONDS },
+  });
+  const list = await parseStringPromise(listXml);
+  const forums: Array<{ $: { id: string; title: string } }> = list.forums?.forum ?? [];
+
+  // Keep the caller's order (e.g. Rules before Strategy), not BGG's.
+  const wanted = forumTitles
+    .map((title) => forums.find((forum) => forum.$.title.toLowerCase() === title.toLowerCase()))
+    .filter((forum): forum is (typeof forums)[number] => Boolean(forum));
+
+  const result: BggForum[] = [];
+  // Sequential, not Promise.all — BGG asks clients not to fire
+  // concurrent requests.
+  for (const forum of wanted) {
+    const forumId = Number(forum.$.id);
+    const forumXml = await fetchWithPolling(`${BGG_BASE_URL}/forum?id=${forumId}&page=1`, {
+      next: { revalidate: FORUM_CACHE_SECONDS },
+    });
+    const parsed = await parseStringPromise(forumXml);
+    const threads: Array<{ $: Record<string, string> }> = parsed.forum?.threads?.[0]?.thread ?? [];
+
+    result.push({
+      id: forumId,
+      title: forum.$.title,
+      url: `https://boardgamegeek.com/forum/${forumId}`,
+      threads: threads.slice(0, threadsPerForum).map(({ $ }) => ({
+        id: Number($.id),
+        subject: $.subject,
+        author: $.author,
+        // numarticles counts the opening post too.
+        replyCount: Math.max(0, Number($.numarticles) - 1),
+        lastPostDate: $.lastpostdate ? new Date($.lastpostdate) : null,
+        url: `https://boardgamegeek.com/thread/${$.id}`,
+      })),
+    });
+  }
+
+  return result;
+}
+
 /**
  * BGG's `thing` endpoint occasionally returns HTTP 202 while it prepares
  * the response, and expects the client to retry after a short delay
  * rather than treating that as an error.
  */
-async function fetchWithPolling(url: string): Promise<string> {
+async function fetchWithPolling(url: string, init: RequestInit = {}): Promise<string> {
   for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
     const response = await fetch(url, {
+      ...init,
       headers: {
         // BGG asks API consumers to identify themselves — see their API
         // terms of use. Set BGG_CONTACT_EMAIL in .env.local.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchGameFromBgg, searchBggGames, fetchHotGameIds } from "@/lib/bgg/client";
+import { fetchGameFromBgg, searchBggGames, fetchHotGameIds, fetchGameForums } from "@/lib/bgg/client";
 
 // A trimmed but structurally real sample of what BGG's /thing endpoint
 // returns, covering every field the client parses: a primary + alternate
@@ -197,5 +197,88 @@ describe("fetchHotGameIds", () => {
     const ids = await fetchHotGameIds();
 
     expect(ids).toEqual([342942, 266192, 174430]);
+  });
+});
+
+// Trimmed samples of BGG's /forumlist and /forum responses.
+const SAMPLE_FORUMLIST_XML = `<?xml version="1.0" encoding="utf-8"?>
+<forums type="thing" id="266192">
+  <forum id="101" groupid="0" title="Reviews" noposting="0" numthreads="50" numposts="400" lastpostdate="Sat, 01 Jan 2022 00:00:00 +0000" />
+  <forum id="102" groupid="0" title="Strategy" noposting="0" numthreads="30" numposts="200" lastpostdate="Sat, 01 Jan 2022 00:00:00 +0000" />
+  <forum id="103" groupid="0" title="Rules" noposting="0" numthreads="80" numposts="600" lastpostdate="Sat, 01 Jan 2022 00:00:00 +0000" />
+</forums>`;
+
+function forumXml(id: number, title: string, threadCount: number) {
+  const threads = Array.from(
+    { length: threadCount },
+    (_, i) =>
+      `<thread id="${id * 100 + i}" subject="${title} question ${i} &amp; more" author="player${i}" numarticles="${i + 1}" postdate="Mon, 02 Jan 2023 10:00:00 +0000" lastpostdate="Tue, 03 Jan 2023 12:00:00 +0000" />`
+  ).join("\n");
+  return `<?xml version="1.0" encoding="utf-8"?>
+<forum id="${id}" title="${title}" numthreads="${threadCount}">
+  <threads>${threads}</threads>
+</forum>`;
+}
+
+describe("fetchGameForums", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns only the requested forums, in the requested order", async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockFetchOnce(200, SAMPLE_FORUMLIST_XML))
+      .mockResolvedValueOnce(mockFetchOnce(200, forumXml(103, "Rules", 2)))
+      .mockResolvedValueOnce(mockFetchOnce(200, forumXml(102, "Strategy", 2)));
+
+    const forums = await fetchGameForums(266192, ["Rules", "Strategy"]);
+
+    expect(forums.map((forum) => forum.title)).toEqual(["Rules", "Strategy"]);
+    expect(forums[0].url).toBe("https://boardgamegeek.com/forum/103");
+    const calledUrls = (global.fetch as any).mock.calls.map((call: any[]) => call[0]);
+    expect(calledUrls[1]).toContain("forum?id=103");
+    expect(calledUrls[2]).toContain("forum?id=102");
+  });
+
+  it("parses each thread's title, author, reply count, date and link", async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockFetchOnce(200, SAMPLE_FORUMLIST_XML))
+      .mockResolvedValueOnce(mockFetchOnce(200, forumXml(103, "Rules", 3)));
+
+    const [rules] = await fetchGameForums(266192, ["Rules"]);
+
+    expect(rules.threads[2]).toEqual({
+      id: 10302,
+      subject: "Rules question 2 & more",
+      author: "player2",
+      replyCount: 2, // numarticles includes the opening post
+      lastPostDate: new Date("2023-01-03T12:00:00Z"),
+      url: "https://boardgamegeek.com/thread/10302",
+    });
+  });
+
+  it("limits the number of threads per forum", async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockFetchOnce(200, SAMPLE_FORUMLIST_XML))
+      .mockResolvedValueOnce(mockFetchOnce(200, forumXml(103, "Rules", 10)));
+
+    const [rules] = await fetchGameForums(266192, ["Rules"], 4);
+
+    expect(rules.threads).toHaveLength(4);
+  });
+
+  it("skips forums the game doesn't have and handles a forum with no threads", async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockFetchOnce(200, SAMPLE_FORUMLIST_XML))
+      .mockResolvedValueOnce(mockFetchOnce(200, forumXml(103, "Rules", 0)));
+
+    const forums = await fetchGameForums(266192, ["Rules", "Variants"]);
+
+    expect(forums).toHaveLength(1);
+    expect(forums[0].threads).toEqual([]);
   });
 });

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { AccountMenu } from "@/components/ui/AccountMenu";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function NavBar() {
@@ -26,11 +27,7 @@ export function NavBar() {
           <ThemeToggle />
 
           <SignedIn>
-            <UserButton afterSignOutUrl="/">
-              <UserButton.MenuItems>
-                <UserButton.Link label="Account Settings" href="/account" labelIcon={<span aria-hidden>⚙️</span>} />
-              </UserButton.MenuItems>
-            </UserButton>
+            <AccountMenu />
           </SignedIn>
           <SignedOut>
             <div className="flex items-center gap-2">

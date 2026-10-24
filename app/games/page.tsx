@@ -3,6 +3,7 @@ import Image from "next/image";
 import { db } from "@/lib/db";
 import { SearchBox } from "@/components/games/SearchBox";
 import { SortControls } from "@/components/games/SortControls";
+import { GameTypeTags } from "@/components/games/GameTypeTags";
 import type { GameSummary } from "@/lib/types";
 
 const PAGE_SIZE = 20;
@@ -61,6 +62,9 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               ★ {game.avgRating.toFixed(1)} ({game.ratingCount})
             </p>
+            <div className="mt-1">
+              <GameTypeTags categories={game.categories} limit={2} size="sm" />
+            </div>
           </Link>
         ))}
       </div>

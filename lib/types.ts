@@ -11,6 +11,7 @@ export interface GameSummary {
   imageUrl: string;
   avgRating: number;
   ratingCount: number;
+  categories: string[];
 }
 
 export interface GameListSummary {

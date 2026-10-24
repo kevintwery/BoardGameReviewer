@@ -31,9 +31,7 @@ export function ListRowView({ games }: ListRowViewProps) {
             </div>
             <div>
               <p className="font-medium">{game.name}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                ★ {game.avgRating.toFixed(1)}
-              </p>
+              <p className="text-base font-semibold text-slate-800 dark:text-slate-100">★ {game.avgRating.toFixed(1)}</p>
             </div>
           </Link>
         </li>

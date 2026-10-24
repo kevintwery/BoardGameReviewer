@@ -48,7 +48,8 @@ export function HeroBanner({
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/90">
           <span>
-            ★ {avgRating.toFixed(1)} ({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})
+            <span className="text-2xl font-bold text-white">★ {avgRating.toFixed(1)}</span> ({ratingCount}{" "}
+            {ratingCount === 1 ? "rating" : "ratings"})
           </span>
           <span>{playerRange}</span>
           <span>{playingTime} min</span>

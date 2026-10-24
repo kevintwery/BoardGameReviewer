@@ -58,7 +58,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
               </div>
               <p className="mt-1 truncate text-sm font-medium">{game.name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                ★ {game.avgRating.toFixed(1)} ({game.ratingCount})
+                <span className="text-base font-semibold text-slate-800 dark:text-slate-100">★ {game.avgRating.toFixed(1)}</span> ({game.ratingCount})
                 {weight && (
                   <span title={`${weight.label} — BGG weight ${weight.value} / 5`}> · Weight {weight.value}</span>
                 )}

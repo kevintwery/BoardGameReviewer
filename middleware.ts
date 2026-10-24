@@ -33,7 +33,11 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    "/((?!_next|.*\\..*).*)", // run on every route except static files
+    // Run on every route except Next internals and real static files.
+    // Excluding *any* path containing a dot (the old `.*\\..*` pattern) let
+    // pages like /lists/foo.bar render without middleware, so auth() threw
+    // "Clerk can't detect usage of clerkMiddleware()".
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
     "/__clerk/:path*",
   ],

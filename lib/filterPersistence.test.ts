@@ -39,7 +39,7 @@ describe("saveFilters", () => {
   });
 
   it("writes the filters as JSON to localStorage", () => {
-    const filters: GameListFilters = { sortBy: "type", sortOrder: "asc", category: "Strategy" };
+    const filters: GameListFilters = { sortBy: "weight", sortOrder: "asc", category: "Strategy" };
 
     saveFilters(filters);
 

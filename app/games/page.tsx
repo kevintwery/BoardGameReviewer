@@ -6,6 +6,7 @@ import { SortControls } from "@/components/games/SortControls";
 import { GameTypeTags } from "@/components/games/GameTypeTags";
 import type { GameSummary } from "@/lib/types";
 import { formatWeight } from "@/lib/weight";
+import { findGamesPage, parseGameSort, parseSortOrder } from "@/lib/gameSort";
 
 const PAGE_SIZE = 20;
 
@@ -15,25 +16,21 @@ interface GamesPageProps {
   // browser back button. lib/filterPersistence.ts separately remembers a
   // user's last choice to redirect them here with the right params.
   searchParams: {
-    sort?: "name" | "rating" | "type";
-    order?: "asc" | "desc";
+    sort?: string;
+    order?: string;
     page?: string;
   };
 }
 
 export default async function GamesPage({ searchParams }: GamesPageProps) {
-  const sort = searchParams.sort ?? "rating";
-  const order = searchParams.order ?? "desc";
+  const sort = parseGameSort(searchParams.sort);
+  const order = parseSortOrder(searchParams.order);
   const page = Number(searchParams.page ?? "1");
 
   const orderBy = sort === "rating" ? { bggRating: order } : { name: order };
 
   const [games, totalCount] = await Promise.all([
-    db.game.findMany({
-      orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
+    findGamesPage({ sort, order, page, pageSize: PAGE_SIZE }),
     db.game.count(),
   ]);
 

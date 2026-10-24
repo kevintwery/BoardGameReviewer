@@ -6,7 +6,7 @@
 const STORAGE_KEY = "gameListFilters";
 
 export interface GameListFilters {
-  sortBy: "name" | "rating" | "type";
+  sortBy: "name" | "rating" | "weight";
   sortOrder: "asc" | "desc";
   category?: string;
 }

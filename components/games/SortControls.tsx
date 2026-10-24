@@ -1,14 +1,15 @@
 import Link from "next/link";
+import type { GameSort, SortOrder } from "@/lib/gameSort";
 
 interface SortControlsProps {
-  currentSort: "name" | "rating" | "type";
-  currentOrder: "asc" | "desc";
+  currentSort: GameSort;
+  currentOrder: SortOrder;
 }
 
-const SORT_OPTIONS: Array<{ value: "name" | "rating" | "type"; label: string }> = [
+const SORT_OPTIONS: Array<{ value: GameSort; label: string }> = [
   { value: "rating", label: "Rating" },
   { value: "name", label: "Name" },
-  { value: "type", label: "Type" },
+  { value: "weight", label: "Weight" },
 ];
 
 /**

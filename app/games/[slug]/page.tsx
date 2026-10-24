@@ -11,6 +11,9 @@ import { RatingForm } from "@/components/games/RatingForm";
 import { AddToListButton } from "@/components/lists/AddToListButton";
 import { RulesSummary } from "@/components/games/RulesSummary";
 import { GameTypeTags } from "@/components/games/GameTypeTags";
+import { BggForumThreads } from "@/components/games/BggForumThreads";
+import { fetchGameForums, type BggForum } from "@/lib/bgg/client";
+import { reportError } from "@/lib/errorReporting";
 
 interface GamePageProps {
   params: { slug: string };
@@ -73,6 +76,14 @@ export default async function GamePage({ params }: GamePageProps) {
     take: 20, // over-fetch since we rank by vote score below, not in the DB query
   });
 
+  // BGG being slow or down shouldn't take the whole game page with it.
+  let bggForums: BggForum[] | null = null;
+  try {
+    bggForums = await fetchGameForums(game.bggId, ["Rules", "Strategy"]);
+  } catch (error) {
+    reportError(error, { context: "fetchGameForums", bggId: game.bggId });
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
       <HeroBanner
@@ -128,6 +139,8 @@ export default async function GamePage({ params }: GamePageProps) {
       </section>
 
       <RulesSummary gameName={game.name} bggId={game.bggId} posts={topRuleClarifications} />
+
+      <BggForumThreads bggId={game.bggId} forums={bggForums} />
 
       <section className="mt-8">
         <div className="flex items-center justify-between">

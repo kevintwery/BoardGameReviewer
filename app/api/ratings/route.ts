@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { ensureUser } from "@/lib/users";
 import { recalculateGameRatingStats } from "@/lib/ratings";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { ratingSchema } from "@/lib/validation";
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  await ensureUser(userId);
 
   const limited = enforceRateLimit(userId, "rating");
   if (limited) {

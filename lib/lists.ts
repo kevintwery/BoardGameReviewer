@@ -25,3 +25,26 @@ export async function createDefaultListsForUser(userId: string): Promise<void> {
     })),
   });
 }
+
+export type DeleteListResult = "deleted" | "not_found" | "default_list";
+
+/**
+ * Deletes one of a user's own lists (its items cascade with it). Default
+ * lists can't be deleted: ensureUser (lib/users.ts) re-creates them if
+ * they go missing, so deleting one would only appear to work.
+ *
+ * "not_found" covers both a missing list and someone else's list, so the
+ * API doesn't reveal which list ids exist.
+ */
+export async function deleteUserList(userId: string, listId: string): Promise<DeleteListResult> {
+  const list = await db.gameList.findUnique({
+    where: { id: listId },
+    select: { userId: true, isDefault: true },
+  });
+
+  if (!list || list.userId !== userId) return "not_found";
+  if (list.isDefault) return "default_list";
+
+  await db.gameList.delete({ where: { id: listId } });
+  return "deleted";
+}

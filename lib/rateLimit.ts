@@ -77,6 +77,7 @@ export const RATE_LIMITS = {
   forumVote: { limit: 60, windowMs: 60_000 }, // 60 votes per minute (voting is low-stakes, allow more)
   report: { limit: 10, windowMs: 60 * 60_000 }, // 10 reports per hour
   listCreate: { limit: 20, windowMs: 60_000 },
+  listDelete: { limit: 20, windowMs: 60_000 },
   listItem: { limit: 60, windowMs: 60_000 },
   bggImport: { limit: 30, windowMs: 60_000 }, // admin action, but still avoid hammering BGG
 } as const;

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { ShelfView } from "@/components/lists/ShelfView";
 import { ListRowView } from "@/components/lists/ListRowView";
+import { DeleteListButton } from "@/components/lists/DeleteListButton";
 
 interface ListDetailPageProps {
   params: { listId: string };
@@ -27,11 +28,17 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
-      <h1 className="text-2xl font-bold">{list.name}</h1>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        {games.length} {games.length === 1 ? "game" : "games"}
-        {list.isPublic ? " · Public" : " · Private"}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{list.name}</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {games.length} {games.length === 1 ? "game" : "games"}
+            {list.isPublic ? " · Public" : " · Private"}
+          </p>
+        </div>
+        {/* Default lists are permanent — see deleteUserList in lib/lists.ts. */}
+        {!list.isDefault && <DeleteListButton listId={list.id} listName={list.name} gameCount={games.length} />}
+      </div>
 
       <div className="mt-6">
         {list.isOwnedList ? <ShelfView games={games} /> : <ListRowView games={games} />}

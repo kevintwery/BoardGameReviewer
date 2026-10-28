@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   db: {
-    gameList: { createMany: vi.fn() },
+    gameList: { createMany: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
   },
 }));
 
 import { db } from "@/lib/db";
-import { createDefaultListsForUser } from "@/lib/lists";
+import { createDefaultListsForUser, deleteUserList } from "@/lib/lists";
 
 describe("createDefaultListsForUser", () => {
   beforeEach(() => {
@@ -50,5 +50,35 @@ describe("createDefaultListsForUser", () => {
     const { data } = (db.gameList.createMany as any).mock.calls[0][0];
 
     expect(data.every((list: any) => list.userId === "user_abc")).toBe(true);
+  });
+});
+
+describe("deleteUserList", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("deletes a custom list that belongs to the user", async () => {
+    (db.gameList.findUnique as any).mockResolvedValue({ userId: "user_123", isDefault: false });
+
+    expect(await deleteUserList("user_123", "list_1")).toBe("deleted");
+    expect(db.gameList.delete).toHaveBeenCalledWith({ where: { id: "list_1" } });
+  });
+
+  it("refuses to delete a default list", async () => {
+    (db.gameList.findUnique as any).mockResolvedValue({ userId: "user_123", isDefault: true });
+
+    expect(await deleteUserList("user_123", "list_1")).toBe("default_list");
+    expect(db.gameList.delete).not.toHaveBeenCalled();
+  });
+
+  it("treats someone else's list the same as a missing one", async () => {
+    (db.gameList.findUnique as any).mockResolvedValue({ userId: "someone_else", isDefault: false });
+    expect(await deleteUserList("user_123", "list_1")).toBe("not_found");
+
+    (db.gameList.findUnique as any).mockResolvedValue(null);
+    expect(await deleteUserList("user_123", "list_1")).toBe("not_found");
+
+    expect(db.gameList.delete).not.toHaveBeenCalled();
   });
 });

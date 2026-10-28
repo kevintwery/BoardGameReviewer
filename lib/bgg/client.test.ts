@@ -21,6 +21,8 @@ const SAMPLE_BGG_XML = `<?xml version="1.0" encoding="utf-8"?>
     <link type="boardgamemechanic" id="3" value="Engine Building" />
     <statistics page="1">
       <ratings>
+        <usersrated value="98765" />
+        <average value="8.03215" />
         <averageweight value="2.4" />
       </ratings>
     </statistics>
@@ -132,6 +134,36 @@ const SAMPLE_SEARCH_XML = `<?xml version="1.0" encoding="utf-8"?>
     <yearpublished value="2021" />
   </item>
 </items>`;
+
+describe("fetchGameFromBgg ratings", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("parses BGG's average rating and number of ratings", async () => {
+    (global.fetch as any).mockResolvedValue(mockFetchOnce(200, SAMPLE_BGG_XML));
+
+    const game = await fetchGameFromBgg(266192);
+
+    expect(game.bggRating).toBeCloseTo(8.03215);
+    expect(game.bggRatingCount).toBe(98765);
+  });
+
+  it("defaults the BGG rating to 0 when stats are missing it", async () => {
+    (global.fetch as any).mockResolvedValue(
+      mockFetchOnce(200, SAMPLE_BGG_XML.replace(/<usersrated[^>]*>|<average [^>]*>/g, ""))
+    );
+
+    const game = await fetchGameFromBgg(266192);
+
+    expect(game.bggRating).toBe(0);
+    expect(game.bggRatingCount).toBe(0);
+  });
+});
 
 describe("searchBggGames", () => {
   beforeEach(() => {

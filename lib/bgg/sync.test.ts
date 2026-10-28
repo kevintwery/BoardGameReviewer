@@ -47,6 +47,8 @@ describe("syncGameFromBgg", () => {
       maxPlayers: 5,
       playingTime: 70,
       bggWeight: 2.4,
+      bggRating: 8,
+      bggRatingCount: 100,
       categories: ["Animals"],
       mechanics: ["Engine Building"],
     });
@@ -82,6 +84,8 @@ describe("syncGamesFromBgg", () => {
         maxPlayers: 4,
         playingTime: 30,
         bggWeight: 1,
+        bggRating: 0,
+        bggRatingCount: 0,
         categories: [],
         mechanics: [],
       })

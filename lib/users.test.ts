@@ -32,22 +32,13 @@ describe("ensureUser", () => {
     vi.clearAllMocks();
   });
 
-  it("does nothing for a user who already has their default lists", async () => {
-    findUnique.mockResolvedValue({ _count: { lists: 4 } });
+  it("does nothing for an existing user, even one who deleted their default lists", async () => {
+    findUnique.mockResolvedValue({ id: "user_123" });
 
     await ensureUser("user_123");
 
     expect(create).not.toHaveBeenCalled();
     expect(createDefaultListsForUser).not.toHaveBeenCalled();
-  });
-
-  it("creates default lists for an existing user who has none", async () => {
-    findUnique.mockResolvedValue({ _count: { lists: 0 } });
-
-    await ensureUser("user_123");
-
-    expect(create).not.toHaveBeenCalled();
-    expect(createDefaultListsForUser).toHaveBeenCalledWith("user_123");
   });
 
   it("creates the user from their Clerk profile, then their default lists", async () => {

@@ -9,24 +9,19 @@ export interface UserProfile {
 }
 
 /**
- * Makes sure a signed-in Clerk user has a row in our `User` table and
- * their default lists. The Clerk webhook normally does this at signup,
- * but webhooks can't reach a local dev server (and can be missed in
- * production), so anything that writes user-owned rows calls this first
- * instead of failing on a missing foreign key. Safe to call repeatedly.
+ * Makes sure a signed-in Clerk user has a row in our `User` table, and
+ * gives them the default lists when that row is first created. The
+ * Clerk webhook normally does this at signup, but webhooks can't reach a
+ * local dev server (and can be missed in production), so anything that
+ * writes user-owned rows calls this first instead of failing on a
+ * missing foreign key. Safe to call repeatedly.
+ *
+ * Existing users are left alone even if they have no lists: users may
+ * delete their default lists, and those shouldn't reappear.
  */
 export async function ensureUser(userId: string, profile?: UserProfile): Promise<void> {
-  const existing = await db.user.findUnique({
-    where: { id: userId },
-    select: { _count: { select: { lists: { where: { isDefault: true } } } } },
-  });
-
-  if (existing) {
-    if (existing._count.lists === 0) {
-      await createDefaultListsForUser(userId);
-    }
-    return;
-  }
+  const existing = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (existing) return;
 
   const { displayName, avatarUrl } = profile ?? (await fetchClerkProfile(userId));
   try {

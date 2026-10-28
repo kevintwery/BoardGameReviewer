@@ -9,8 +9,8 @@ import { NewListForm } from "@/components/lists/NewListForm";
 // the visitor is signed in.
 export default async function ListsPage() {
   const { userId } = await auth();
-  // Creates the default lists if the signup webhook never ran (e.g. in
-  // local dev), so there's always at least one list here.
+  // Creates the user and their default lists if the signup webhook never
+  // ran (e.g. in local dev).
   await ensureUser(userId!);
 
   const lists = await db.gameList.findMany({
@@ -38,6 +38,11 @@ export default async function ListsPage() {
             </span>
           </Link>
         ))}
+        {lists.length === 0 && (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            You don&apos;t have any lists yet. Create one above.
+          </p>
+        )}
       </div>
     </main>
   );

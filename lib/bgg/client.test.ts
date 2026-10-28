@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchGameFromBgg, searchBggGames, fetchHotGameIds, fetchGameForums } from "@/lib/bgg/client";
+import { fetchGameFromBgg, searchBggGames, fetchHotGameIds, fetchGameForums, extractYouTubeId } from "@/lib/bgg/client";
 
 // A trimmed but structurally real sample of what BGG's /thing endpoint
 // returns, covering every field the client parses: a primary + alternate
@@ -19,6 +19,13 @@ const SAMPLE_BGG_XML = `<?xml version="1.0" encoding="utf-8"?>
     <link type="boardgamecategory" id="1" value="Animals" />
     <link type="boardgamecategory" id="2" value="Card Game" />
     <link type="boardgamemechanic" id="3" value="Engine Building" />
+    <videos total="5">
+      <video id="501" title="Wingspan review" category="review" language="English" link="https://www.youtube.com/watch?v=REVIEW00001" />
+      <video id="502" title="Comment jouer" category="instructional" language="French" link="https://www.youtube.com/watch?v=FRENCH00001" />
+      <video id="503" title="How to Play Wingspan" category="instructional" language="English" link="http://www.youtube.com/watch?v=ENGLISH0001" />
+      <video id="504" title="Vimeo rules" category="instructional" language="English" link="https://vimeo.com/12345" />
+      <video id="505" title="Learn in 10" category="instructional" language="English" link="https://youtu.be/ENGLISH0002" />
+    </videos>
     <statistics page="1">
       <ratings>
         <usersrated value="12500" />
@@ -164,6 +171,63 @@ describe("fetchGameFromBgg ratings", () => {
 
     expect(game.bggRating).toBe(0);
     expect(game.bggRatingCount).toBe(0);
+  });
+});
+
+describe("fetchGameFromBgg instructional videos", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("asks BGG to include videos", async () => {
+    (global.fetch as any).mockResolvedValue(mockFetchOnce(200, SAMPLE_BGG_XML));
+
+    await fetchGameFromBgg(266192);
+
+    expect((global.fetch as any).mock.calls[0][0]).toContain("videos=1");
+  });
+
+  it("keeps only instructional YouTube videos, English first", async () => {
+    (global.fetch as any).mockResolvedValue(mockFetchOnce(200, SAMPLE_BGG_XML));
+
+    const game = await fetchGameFromBgg(266192);
+
+    expect(game.instructionalVideos).toEqual([
+      { bggVideoId: 503, youtubeVideoId: "ENGLISH0001", title: "How to Play Wingspan" },
+      { bggVideoId: 505, youtubeVideoId: "ENGLISH0002", title: "Learn in 10" },
+      { bggVideoId: 502, youtubeVideoId: "FRENCH00001", title: "Comment jouer" },
+    ]);
+  });
+
+  it("returns no videos when BGG lists none", async () => {
+    (global.fetch as any).mockResolvedValue(
+      mockFetchOnce(200, SAMPLE_BGG_XML.replace(/<videos[\s\S]*<\/videos>/, ""))
+    );
+
+    const game = await fetchGameFromBgg(266192);
+
+    expect(game.instructionalVideos).toEqual([]);
+  });
+});
+
+describe("extractYouTubeId", () => {
+  it("handles the YouTube URL shapes BGG links use", () => {
+    expect(extractYouTubeId("https://www.youtube.com/watch?v=lH2XCq0oCoA")).toBe("lH2XCq0oCoA");
+    expect(extractYouTubeId("http://youtube.com/watch?v=lH2XCq0oCoA&t=30")).toBe("lH2XCq0oCoA");
+    expect(extractYouTubeId("https://m.youtube.com/watch?v=lH2XCq0oCoA")).toBe("lH2XCq0oCoA");
+    expect(extractYouTubeId("https://youtu.be/lH2XCq0oCoA")).toBe("lH2XCq0oCoA");
+    expect(extractYouTubeId("https://www.youtube.com/embed/lH2XCq0oCoA")).toBe("lH2XCq0oCoA");
+  });
+
+  it("rejects non-YouTube or malformed links", () => {
+    expect(extractYouTubeId("https://vimeo.com/12345")).toBeNull();
+    expect(extractYouTubeId("https://www.youtube.com/watch?v=short")).toBeNull();
+    expect(extractYouTubeId("not a url")).toBeNull();
+    expect(extractYouTubeId(undefined)).toBeNull();
   });
 });
 

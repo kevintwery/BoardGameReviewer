@@ -36,8 +36,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
             {list.isPublic ? " · Public" : " · Private"}
           </p>
         </div>
-        {/* Default lists are permanent — see deleteUserList in lib/lists.ts. */}
-        {!list.isDefault && <DeleteListButton listId={list.id} listName={list.name} gameCount={games.length} />}
+        <DeleteListButton listId={list.id} listName={list.name} gameCount={games.length} />
       </div>
 
       <div className="mt-6">

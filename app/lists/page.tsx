@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { ensureUser } from "@/lib/users";
+import { NewListForm } from "@/components/lists/NewListForm";
 
 // This route is already gated by middleware.ts (see the isProtectedRoute
 // matcher for "/lists(.*)"), so by the time this component runs we know
@@ -21,6 +22,8 @@ export default async function ListsPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-2xl font-bold">My Lists</h1>
+
+      <NewListForm />
 
       <div className="mt-6 space-y-3">
         {lists.map((list) => (

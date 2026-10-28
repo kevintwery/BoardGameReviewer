@@ -25,6 +25,8 @@ export interface BggGameData {
   maxPlayers: number;
   playingTime: number;
   bggWeight: number;
+  bggRating: number;
+  bggRatingCount: number;
   categories: string[];
   mechanics: string[];
   bggRating: number;
@@ -51,6 +53,8 @@ export async function fetchGameFromBgg(bggId: number): Promise<BggGameData> {
       bggWeight: Number(
         item.statistics[0].ratings[0].averageweight[0].$.value
       ),
+      bggRating: Number(item.statistics[0].ratings[0].average?.[0]?.$.value ?? 0),
+      bggRatingCount: Number(item.statistics[0].ratings[0].usersrated?.[0]?.$.value ?? 0),
       categories: extractLinksByType(item, "boardgamecategory"),
       mechanics: extractLinksByType(item, "boardgamemechanic"),
       bggRating: Number(item.statistics[0].ratings[0].average[0].$.value),

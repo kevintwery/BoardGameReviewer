@@ -36,7 +36,16 @@ export function SimilarGames({ games }: SimilarGamesProps) {
               />
             </div>
             <p className="mt-1 truncate text-sm font-medium">{game.name}</p>
-            <p className="text-base font-semibold text-slate-800 dark:text-slate-100">★ {game.avgRating.toFixed(1)}</p>
+            {game.bggRating > 0 ? (
+              <p
+                className="text-base font-semibold text-slate-800 dark:text-slate-100"
+                title="BoardGameGeek community rating, out of 10"
+              >
+                ★ {game.bggRating.toFixed(1)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">BGG</span>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">No BGG rating</p>
+            )}
           </Link>
         ))}
       </div>

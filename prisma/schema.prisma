@@ -83,7 +83,9 @@ model Game {
   avgRating   Float @default(0)
   ratingCount Int   @default(0)
 
-  // BGG's published rating, kept separate from this site's community ratings.
+  // BGG's own community average (1-10) and how many BGG users rated it,
+  // imported with the rest of the BGG data. Used where we show BGG's
+  // score rather than our own users' (e.g. "You Might Also Like").
   bggRating      Float @default(0)
   bggRatingCount Int   @default(0)
 

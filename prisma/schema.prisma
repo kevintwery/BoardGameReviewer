@@ -119,6 +119,11 @@ model Video {
   title         String
   sortOrder     Int    @default(0)
 
+  // Set for videos imported from BGG's instructional videos (see
+  // lib/bgg/sync.ts), which a re-sync replaces wholesale. Null means
+  // hand-curated (e.g. the seed script), which syncing never touches.
+  bggVideoId Int? @unique
+
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@index([gameId])

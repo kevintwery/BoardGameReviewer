@@ -11,15 +11,47 @@ import { fetchGameFromBgg } from "@/lib/bgg/client";
  * also be called manually to add a single new game to the site.
  */
 export async function syncGameFromBgg(bggId: number): Promise<void> {
-  const data = await fetchGameFromBgg(bggId);
+  const { instructionalVideos, ...data } = await fetchGameFromBgg(bggId);
   const slug = slugify(data.name);
 
-  await db.game.upsert({
+  const game = await db.game.upsert({
     where: { bggId: data.bggId },
     create: { ...data, slug },
     update: { ...data, slug },
+    select: { id: true },
   });
+
+  // Skip BGG videos the game already has as hand-curated ones, so the
+  // same video doesn't show up twice.
+  const curated = await db.video.findMany({
+    where: { gameId: game.id, bggVideoId: null },
+    select: { youtubeVideoId: true },
+  });
+  const curatedIds = new Set(curated.map((video) => video.youtubeVideoId));
+  const newVideos = instructionalVideos.filter((video) => !curatedIds.has(video.youtubeVideoId));
+
+  // Replace this game's BGG-imported videos with BGG's current set, in
+  // one transaction so the page never sees the game with none. Videos
+  // without a bggVideoId were added by hand and are left alone.
+  await db.$transaction([
+    db.video.deleteMany({ where: { gameId: game.id, bggVideoId: { not: null } } }),
+    db.video.createMany({
+      data: newVideos.map((video, index) => ({
+        gameId: game.id,
+        bggVideoId: video.bggVideoId,
+        youtubeVideoId: video.youtubeVideoId,
+        title: video.title,
+        // After any hand-curated videos, which use small sortOrders.
+        sortOrder: IMPORTED_VIDEO_SORT_OFFSET + index,
+      })),
+      // Another game may already hold the same BGG video (BGG sometimes
+      // links one video to several games) — skip it rather than fail.
+      skipDuplicates: true,
+    }),
+  ]);
 }
+
+const IMPORTED_VIDEO_SORT_OFFSET = 100;
 
 /**
  * Syncs a list of games one at a time. BGG asks API consumers not to

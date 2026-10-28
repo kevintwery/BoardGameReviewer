@@ -29,13 +29,24 @@ export interface BggGameData {
   bggRatingCount: number;
   categories: string[];
   mechanics: string[];
+  instructionalVideos: BggVideo[];
 }
+
+export interface BggVideo {
+  bggVideoId: number;
+  youtubeVideoId: string;
+  title: string;
+}
+
+// How many how-to-play videos to keep per game — enough to offer a
+// choice without turning the game page into a video gallery.
+const MAX_INSTRUCTIONAL_VIDEOS = 3;
 
 /**
  * Fetches full details for a single game by its BGG id.
  */
 export async function fetchGameFromBgg(bggId: number): Promise<BggGameData> {
-  const url = `${BGG_BASE_URL}/thing?id=${bggId}&stats=1`;
+  const url = `${BGG_BASE_URL}/thing?id=${bggId}&stats=1&videos=1`;
   const xml = await fetchWithPolling(url);
   const parsed = await parseStringPromise(xml);
 
@@ -55,6 +66,7 @@ export async function fetchGameFromBgg(bggId: number): Promise<BggGameData> {
       bggRatingCount: Number(item.statistics[0].ratings[0].usersrated?.[0]?.$.value ?? 0),
       categories: extractLinksByType(item, "boardgamecategory"),
       mechanics: extractLinksByType(item, "boardgamemechanic"),
+      instructionalVideos: extractInstructionalVideos(item),
     };
     console.log(boardGameItem.name, boardGameItem.bggId, boardGameItem.minPlayers, boardGameItem.maxPlayers, boardGameItem.playingTime, boardGameItem.bggWeight, boardGameItem.categories, boardGameItem.mechanics);
   return boardGameItem;
@@ -215,6 +227,51 @@ function extractPrimaryName(item: any): string {
 function extractLinksByType(item: any, linkType: string): string[] {
   const links = item.link as Array<{ $: { type: string; value: string } }>;
   return links.filter((link) => link.$.type === linkType).map((link) => link.$.value);
+}
+
+/**
+ * BGG lists every video users have linked for a game, tagged by category
+ * ("instructional", "review", "session", …). We keep the instructional
+ * ones hosted on YouTube (our player only embeds YouTube), English first
+ * since that's the site's language, in BGG's order otherwise.
+ */
+function extractInstructionalVideos(item: any): BggVideo[] {
+  const videos: Array<{ $: Record<string, string> }> = item.videos?.[0]?.video ?? [];
+
+  const instructional = videos
+    .filter(({ $ }) => $.category === "instructional")
+    .map(({ $ }) => ({
+      bggVideoId: Number($.id),
+      youtubeVideoId: extractYouTubeId($.link),
+      title: $.title,
+      isEnglish: $.language === "English",
+    }))
+    .filter((video): video is typeof video & { youtubeVideoId: string } => video.youtubeVideoId !== null);
+
+  // Array.prototype.sort is stable, so BGG's order holds within each group.
+  return instructional
+    .sort((a, b) => Number(b.isEnglish) - Number(a.isEnglish))
+    .slice(0, MAX_INSTRUCTIONAL_VIDEOS)
+    .map(({ bggVideoId, youtubeVideoId, title }) => ({ bggVideoId, youtubeVideoId, title }));
+}
+
+/** Pulls the video id out of the YouTube URL shapes BGG links use. */
+export function extractYouTubeId(link: string | undefined): string | null {
+  if (!link) return null;
+  try {
+    const url = new URL(link);
+    const host = url.hostname.replace(/^(www\.|m\.)/, "");
+    const id =
+      host === "youtu.be"
+        ? url.pathname.slice(1)
+        : host === "youtube.com"
+          ? url.searchParams.get("v") ?? url.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/)?.[1]
+          : null;
+    // YouTube ids are 11 chars of [A-Za-z0-9_-]; anything else is junk.
+    return id && /^[\w-]{11}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
 }
 
 function sleep(ms: number): Promise<void> {

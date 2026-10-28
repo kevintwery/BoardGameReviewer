@@ -7,8 +7,8 @@ interface RouteParams {
   params: { listId: string };
 }
 
-// DELETE /api/lists/[listId] — delete one of the user's own (non-default)
-// lists, along with the games saved in it.
+// DELETE /api/lists/[listId] — delete one of the user's own lists
+// (default or custom), along with the games saved in it.
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   const { userId } = await auth();
   if (!userId) {
@@ -26,9 +26,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   const result = await deleteUserList(userId, params.listId);
   if (result === "not_found") {
     return NextResponse.json({ error: "List not found" }, { status: 404 });
-  }
-  if (result === "default_list") {
-    return NextResponse.json({ error: "Default lists can't be deleted." }, { status: 400 });
   }
 
   return NextResponse.json({ success: true });

@@ -11,8 +11,7 @@ interface DeleteListButtonProps {
 
 /**
  * Two-step delete: the first click only shows a warning, and the list is
- * deleted only once the user confirms there. Default lists never get
- * this button (the API refuses to delete them anyway).
+ * deleted only once the user confirms there.
  */
 export function DeleteListButton({ listId, listName, gameCount }: DeleteListButtonProps) {
   const router = useRouter();
